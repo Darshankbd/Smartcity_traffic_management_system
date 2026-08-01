@@ -13,14 +13,13 @@ DASHBOARD_HTML = """
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Smart City IoT Traffic & Location Analytics | MongoDB BDA Project</title>
+    <title>Smart City IoT Traffic & Time Interval Analytics | MongoDB BDA Project</title>
     
     <!-- Bootstrap 5 & FontAwesome -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     
     <!-- Leaflet CSS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
     <!-- Chart.js & ApexCharts -->
@@ -75,17 +74,10 @@ DASHBOARD_HTML = """
             border-radius: 16px;
             padding: 20px;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            position: relative;
         }
 
         .glass-card:hover {
             border-color: rgba(255, 255, 255, 0.18);
-        }
-
-        .metric-value {
-            font-size: 2.1rem;
-            font-weight: 800;
-            font-family: 'JetBrains Mono', monospace;
         }
 
         #leafletMap {
@@ -107,26 +99,30 @@ DASHBOARD_HTML = """
 
         .section-header i { color: var(--accent-cyan); }
 
+        .time-tab-btn {
+            background: #1e293b;
+            color: #94a3b8;
+            border: 1px solid #334155;
+            border-radius: 20px;
+            padding: 6px 16px;
+            font-size: 0.82rem;
+            font-weight: 700;
+            transition: all 0.2s;
+        }
+        .time-tab-btn.active, .time-tab-btn:hover {
+            background: #2563eb;
+            color: white;
+            border-color: #38bdf8;
+            box-shadow: 0 0 12px rgba(56, 189, 248, 0.4);
+        }
+
         .select-location-box {
             background: #1e293b;
             border: 2px solid var(--accent-cyan);
             color: #f8fafc;
             border-radius: 10px;
-            padding: 10px 16px;
+            padding: 8px 14px;
             font-weight: 700;
-        }
-
-        .table-custom {
-            font-size: 0.85rem;
-            color: #cbd5e1;
-        }
-        .table-custom th {
-            background-color: #0f172a;
-            color: #38bdf8;
-            border-color: #334155;
-        }
-        .table-custom td {
-            border-color: #1e293b;
         }
     </style>
 </head>
@@ -137,15 +133,14 @@ DASHBOARD_HTML = """
         <div class="container-fluid">
             <div class="d-flex align-items-center gap-3">
                 <div class="p-2 rounded-3 bg-primary bg-opacity-20 border border-primary border-opacity-30">
-                    <i class="fa-solid fa-map-pin text-info fs-4"></i>
+                    <i class="fa-solid fa-clock text-info fs-4"></i>
                 </div>
                 <div>
-                    <div class="brand-text">SMART CITY TRAFFIC MONITORING & LOCATION INSPECTOR</div>
-                    <div class="text-secondary small fw-semibold">MongoDB 2dsphere Location Querying • 15 City Intersections</div>
+                    <div class="brand-text">SMART CITY TRAFFIC TIME INTERVAL ANALYTICS</div>
+                    <div class="text-secondary small fw-semibold">MongoDB 2dsphere Geospatial • Time Interval Window Analysis</div>
                 </div>
             </div>
             <div class="d-flex align-items-center gap-3">
-                <!-- Location Selector Widget -->
                 <div class="d-flex align-items-center gap-2">
                     <i class="fa-solid fa-location-dot text-info fs-5"></i>
                     <select id="locationSelect" class="form-select select-location-box" onchange="onLocationChange()">
@@ -161,86 +156,89 @@ DASHBOARD_HTML = """
 
     <div class="container-fluid px-4 pb-5">
         
-        <!-- Place Inspection Header Banner (Visible when a location is selected) -->
-        <div id="placeBanner" class="alert alert-info bg-dark text-light border-info d-flex justify-content-between align-items-center mb-4 rounded-4 shadow-lg p-3">
-            <div>
-                <h4 id="selectedPlaceTitle" class="mb-1 text-info fw-bold"><i class="fa-solid fa-building-flag me-2"></i> Silk Board Junction</h4>
-                <div id="selectedPlaceCoords" class="text-secondary small">Coordinates: GeoJSON [77.6229, 12.9172] • 10 Installed IoT Sensors</div>
-            </div>
-            <div class="d-flex gap-3 text-center">
-                <div class="px-3 border-end border-secondary">
-                    <div class="text-secondary small">Avg Speed</div>
-                    <div id="locSpeed" class="fw-bold text-success fs-4">52.5 km/h</div>
+        <!-- Interactive Time Interval Window Tabs -->
+        <div class="glass-card mb-4">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+                <div class="section-header mb-0">
+                    <i class="fa-solid fa-business-time text-warning"></i> Select Traffic Time Interval Window:
                 </div>
-                <div class="px-3 border-end border-secondary">
-                    <div class="text-secondary small">Signal Delay</div>
-                    <div id="locWait" class="fw-bold text-warning fs-4">120 sec</div>
-                </div>
-                <div class="px-3">
-                    <div class="text-secondary small">Noise Level</div>
-                    <div id="locNoise" class="fw-bold text-danger fs-4">78 dB</div>
+                <div class="d-flex gap-2 flex-wrap">
+                    <button class="time-tab-btn active" onclick="filterTimeInterval('all', this)">All Hours (24h)</button>
+                    <button class="time-tab-btn" onclick="filterTimeInterval('morning_peak', this)">🚨 Morning Peak (08:00–11:00 AM)</button>
+                    <button class="time-tab-btn" onclick="filterTimeInterval('midday', this)">🟡 Midday Moderate (11:00 AM–05:00 PM)</button>
+                    <button class="time-tab-btn" onclick="filterTimeInterval('evening_peak', this)">🚨 Evening Peak (05:00–09:00 PM)</button>
+                    <button class="time-tab-btn" onclick="filterTimeInterval('night_light', this)">🟢 Night Light Traffic (10:00 PM–06:00 AM)</button>
                 </div>
             </div>
         </div>
 
-        <!-- Main Dashboard Grid -->
+        <!-- Main Content Row -->
         <div class="row g-4 mb-4">
             
-            <!-- Left Column: Map & Selected Location Details -->
+            <!-- Left Column: Time Interval Graphical Analytics & Map -->
             <div class="col-xl-7">
+                
+                <!-- NEW FEATURE: Time Interval Graphical Comparison Chart -->
                 <div class="glass-card mb-4">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <div class="section-header mb-0">
-                            <i class="fa-solid fa-map-location-dot"></i> Interactive Location Map & Hotspots
-                        </div>
-                        <span class="badge bg-primary">Click Any Marker to Inspect Place</span>
+                    <div class="section-header">
+                        <i class="fa-solid fa-chart-line text-info"></i> Traffic Intensity & Speed by Time Intervals
+                    </div>
+                    <div style="height: 250px;">
+                        <canvas id="timeIntervalGraphChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="glass-card">
+                    <div class="section-header mb-3">
+                        <i class="fa-solid fa-map-location-dot"></i> Interactive Heatmap & Congestion Map
                     </div>
                     <div id="leafletMap"></div>
                 </div>
-
-                <!-- Selected Location Readings Table -->
-                <div class="glass-card">
-                    <div class="section-header">
-                        <i class="fa-solid fa-table text-info"></i> MongoDB Readings at Selected Location
-                    </div>
-                    <div class="table-responsive" style="max-height: 250px;">
-                        <table class="table table-dark table-striped table-custom">
-                            <thead>
-                                <tr>
-                                    <th>Sensor ID</th>
-                                    <th>Status</th>
-                                    <th>Vehicle Count</th>
-                                    <th>Avg Speed</th>
-                                    <th>Signal Wait</th>
-                                    <th>Noise (dB)</th>
-                                </tr>
-                            </thead>
-                            <tbody id="readingsTableBody">
-                                <tr><td colspan="6" class="text-center text-secondary">Select a place from the dropdown above to view MongoDB documents...</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
             </div>
 
-            <!-- Right Column: Place Specific Analytics & Demographics -->
+            <!-- Right Column: Time Slot Breakdown & Place Details -->
             <div class="col-xl-5">
                 
-                <!-- Chart 1: Vehicle Breakdown at Location -->
+                <!-- Time Interval Summary Card -->
                 <div class="glass-card mb-4">
                     <div class="section-header">
-                        <i class="fa-solid fa-chart-pie text-info"></i> Vehicle Mix at Selected Location
+                        <i class="fa-solid fa-list-check text-warning"></i> Active Time Window Metrics
                     </div>
-                    <div id="locVehiclePie" style="min-height: 220px;"></div>
+                    <div class="row g-2 text-center">
+                        <div class="col-6">
+                            <div class="p-3 bg-dark rounded-3 border border-secondary">
+                                <div class="text-secondary small">Traffic Intensity</div>
+                                <div id="intervalStatus" class="fw-bold text-danger fs-5">Peak Rush</div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="p-3 bg-dark rounded-3 border border-secondary">
+                                <div class="text-secondary small">Avg Vehicle Volume</div>
+                                <div id="intervalVolume" class="fw-bold text-info fs-5">50,800 / hr</div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="p-3 bg-dark rounded-3 border border-secondary">
+                                <div class="text-secondary small">Avg Travel Speed</div>
+                                <div id="intervalSpeed" class="fw-bold text-success fs-5">45.8 km/h</div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="p-3 bg-dark rounded-3 border border-secondary">
+                                <div class="text-secondary small">Avg Signal Standing Delay</div>
+                                <div id="intervalWait" class="fw-bold text-warning fs-5">190 sec</div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
-                <!-- Chart 2: Commuter Demographics at Location -->
+                <!-- 24-Hour Curve Chart -->
                 <div class="glass-card mb-4">
                     <div class="section-header">
-                        <i class="fa-solid fa-user-group text-warning"></i> Commuter Breakdown at Selected Location
+                        <i class="fa-solid fa-chart-area text-purple"></i> 24-Hour Bimodal Peak Curve
                     </div>
-                    <div style="height: 200px;">
-                        <canvas id="locCommuterChart"></canvas>
+                    <div style="height: 210px;">
+                        <canvas id="hourly24hChart"></canvas>
                     </div>
                 </div>
 
@@ -254,11 +252,13 @@ DASHBOARD_HTML = """
 
     <script>
         let map, heatLayer, markersGroup;
-        let vehiclePieChart, commuterChart;
+        let timeIntervalGraphChart, hourly24hChart;
 
         document.addEventListener('DOMContentLoaded', () => {
             initMap();
             loadLocationsList();
+            loadTimeIntervalGraph();
+            load24hHourlyChart();
         });
 
         function initMap() {
@@ -284,105 +284,123 @@ DASHBOARD_HTML = """
                         opt.value = loc.name;
                         opt.innerText = loc.name;
                         select.appendChild(opt);
-
-                        // Add Interactive Marker to Map
-                        const marker = L.circleMarker([loc.coords[1], loc.coords[0]], {
-                            radius: 9, color: '#38bdf8', fillColor: '#38bdf8', fillOpacity: 0.8
-                        }).bindPopup(`<b>${loc.name}</b><br>Click to inspect traffic data`);
-                        
-                        marker.on('click', () => {
-                            select.value = loc.name;
-                            fetchLocationDetails(loc.name);
-                        });
-
-                        markersGroup.addLayer(marker);
                     });
-
-                    // Select first place by default
-                    if (locs.length > 0) {
-                        select.value = locs[0].name;
-                        fetchLocationDetails(locs[0].name);
-                    }
                 });
         }
 
         function onLocationChange() {
             const locName = document.getElementById('locationSelect').value;
-            if (locName) fetchLocationDetails(locName);
+            if (locName) {
+                fetch('/api/locations_list')
+                    .then(r => r.json())
+                    .then(locs => {
+                        const target = locs.find(l => l.name === locName);
+                        if (target) map.flyTo([target.coords[1], target.coords[0]], 14);
+                    });
+            }
         }
 
-        function fetchLocationDetails(roadName) {
-            fetch(`/api/location_details?road_name=${encodeURIComponent(roadName)}`)
+        function loadTimeIntervalGraph() {
+            fetch('/api/time_interval_stats')
                 .then(r => r.json())
-                .then(data => {
-                    // Update Banner Header
-                    document.getElementById('selectedPlaceTitle').innerText = data.road_name;
-                    document.getElementById('selectedPlaceCoords').innerText = `GeoJSON Point [${data.coords[0]}, ${data.coords[1]}] • ${data.readings_count} Snapshots Analyzed`;
-                    document.getElementById('locSpeed').innerText = `${data.avg_speed.toFixed(1)} km/h`;
-                    document.getElementById('locWait').innerText = `${data.avg_wait.toFixed(0)} sec`;
-                    document.getElementById('locNoise').innerText = `${data.avg_noise.toFixed(1)} dB`;
+                .then(intervals => {
+                    const labels = intervals.map(i => i.label);
+                    const volumes = intervals.map(i => i.avg_hourly_volume);
+                    const speeds = intervals.map(i => i.avg_speed);
+                    const waits = intervals.map(i => i.avg_wait_sec);
 
-                    // Fly map to place
-                    map.flyTo([data.coords[1], data.coords[0]], 14);
-
-                    // Update Table
-                    const tbody = document.getElementById('readingsTableBody');
-                    tbody.innerHTML = '';
-                    data.latest_readings.forEach(r => {
-                        const tr = document.createElement('tr');
-                        tr.innerHTML = `
-                            <td><span class="badge bg-secondary">${r.sensor_id}</span></td>
-                            <td><span class="badge ${r.status === 'Heavy Congestion' ? 'bg-danger' : (r.status === 'Moderate Traffic' ? 'bg-warning' : 'bg-success')}">${r.status}</span></td>
-                            <td class="fw-bold">${r.vehicle_count}</td>
-                            <td>${r.avg_speed} km/h</td>
-                            <td>${r.signal_wait_time_sec}s</td>
-                            <td>${r.noise_level_db} dB</td>
-                        `;
-                        tbody.appendChild(tr);
+                    const ctx = document.getElementById('timeIntervalGraphChart').getContext('2d');
+                    timeIntervalGraphChart = new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: labels,
+                            datasets: [
+                                {
+                                    label: 'Hourly Vehicle Volume',
+                                    data: volumes,
+                                    backgroundColor: ['#f43f5e', '#f59e0b', '#f43f5e', '#10b981'],
+                                    borderRadius: 6,
+                                    yAxisID: 'y'
+                                },
+                                {
+                                    label: 'Avg Speed (km/h)',
+                                    data: speeds,
+                                    type: 'line',
+                                    borderColor: '#38bdf8',
+                                    borderWidth: 3,
+                                    yAxisID: 'y1'
+                                },
+                                {
+                                    label: 'Signal Delay (sec)',
+                                    data: waits,
+                                    type: 'line',
+                                    borderColor: '#a855f7',
+                                    borderWidth: 2,
+                                    borderDash: [5, 5],
+                                    yAxisID: 'y1'
+                                }
+                            ]
+                        },
+                        options: {
+                            responsive: true, maintainAspectRatio: false,
+                            scales: {
+                                x: { grid: { display: false }, ticks: { color: '#f8fafc', font: { size: 10, weight: 'bold' } } },
+                                y: { position: 'left', grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } },
+                                y1: { position: 'right', grid: { display: false }, ticks: { color: '#38bdf8' } }
+                            },
+                            plugins: { legend: { labels: { color: '#f8fafc' } } }
+                        }
                     });
-
-                    // Update Charts
-                    renderVehiclePie(data.vehicle_mix);
-                    renderCommuterBar(data.commuters);
                 });
         }
 
-        function renderVehiclePie(vMix) {
-            const options = {
-                series: [vMix.two_wheelers, vMix.cars, vMix.auto_rickshaws, vMix.buses, vMix.trucks],
-                labels: ['Two Wheelers', 'Cars', 'Auto Rickshaws', 'Buses', 'Trucks'],
-                chart: { type: 'pie', height: 220 },
-                colors: ['#38bdf8', '#818cf8', '#f59e0b', '#10b981', '#f43f5e'],
-                legend: { position: 'bottom', labels: { colors: '#f8fafc' } }
-            };
-            if (vehiclePieChart) vehiclePieChart.destroy();
-            vehiclePieChart = new ApexCharts(document.querySelector("#locVehiclePie"), options);
-            vehiclePieChart.render();
+        function filterTimeInterval(slotKey, btnElement) {
+            document.querySelectorAll('.time-tab-btn').forEach(b => b.classList.remove('active'));
+            btnElement.classList.add('active');
+
+            fetch(`/api/time_interval_stats?slot=${slotKey}`)
+                .then(r => r.json())
+                .then(data => {
+                    if (data.single) {
+                        document.getElementById('intervalStatus').innerText = data.single.status;
+                        document.getElementById('intervalVolume').innerText = `${data.single.avg_hourly_volume.toLocaleString()} / hr`;
+                        document.getElementById('intervalSpeed').innerText = `${data.single.avg_speed.toFixed(1)} km/h`;
+                        document.getElementById('intervalWait').innerText = `${data.single.avg_wait_sec.toFixed(0)} sec`;
+                    }
+                });
         }
 
-        function renderCommuterBar(commuters) {
-            const ctx = document.getElementById('locCommuterChart').getContext('2d');
-            if (commuterChart) commuterChart.destroy();
-            commuterChart = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: ['Office Workers', 'Students', 'Daily Commuters', 'Commercial Drivers'],
-                    datasets: [{
-                        label: 'Commuter Count',
-                        data: [commuters.office_workers, commuters.students, commuters.daily_commuters, commuters.commercial_drivers],
-                        backgroundColor: ['#a855f7', '#38bdf8', '#10b981', '#f59e0b'],
-                        borderRadius: 6
-                    }]
-                },
-                options: {
-                    responsive: true, maintainAspectRatio: false,
-                    scales: {
-                        x: { grid: { display: false }, ticks: { color: '#94a3b8' } },
-                        y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } }
-                    },
-                    plugins: { legend: { display: false } }
-                }
-            });
+        function load24hHourlyChart() {
+            fetch('/api/analytics')
+                .then(r => r.json())
+                .then(data => {
+                    const hours = data.q2_peak_hours.map(d => `${d._id}:00`);
+                    const vehicles = data.q2_peak_hours.map(d => d.total_vehicles);
+
+                    const ctx = document.getElementById('hourly24hChart').getContext('2d');
+                    hourly24hChart = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: hours,
+                            datasets: [{
+                                label: '24h Total Vehicle Spikes',
+                                data: vehicles,
+                                borderColor: '#a855f7',
+                                backgroundColor: 'rgba(168, 85, 247, 0.15)',
+                                fill: true,
+                                tension: 0.4
+                            }]
+                        },
+                        options: {
+                            responsive: true, maintainAspectRatio: false,
+                            scales: {
+                                x: { grid: { display: false }, ticks: { color: '#94a3b8' } },
+                                y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } }
+                            },
+                            plugins: { legend: { display: false } }
+                        }
+                    });
+                });
         }
     </script>
 </body>
@@ -406,88 +424,21 @@ def api_locations_list():
     locs = [{"name": node["name"], "coords": node["base_coords"]} for node in ROAD_NODES]
     return jsonify(locs)
 
-@app.route('/api/location_details')
-def api_location_details():
-    road_name = request.args.get('road_name', 'Silk Board Junction')
-    client = connect_mongodb()
+@app.route('/api/time_interval_stats')
+def api_time_interval_stats():
+    slot = request.args.get('slot', 'all')
+    intervals = [
+        {"slot": "morning_peak", "label": "Morning Peak (08-11 AM)", "status": "🚨 Severe Peak", "avg_hourly_volume": 50100, "avg_speed": 46.1, "avg_wait_sec": 185},
+        {"slot": "midday", "label": "Midday Moderate (11 AM-05 PM)", "status": "🟡 Moderate", "avg_hourly_volume": 30200, "avg_speed": 57.3, "avg_wait_sec": 65},
+        {"slot": "evening_peak", "label": "Evening Peak (05-09 PM)", "status": "🚨 Severe Peak", "avg_hourly_volume": 50800, "avg_speed": 45.8, "avg_wait_sec": 195},
+        {"slot": "night_light", "label": "Night Light (10 PM-06 AM)", "status": "🟢 Smooth Flow", "avg_hourly_volume": 8200, "avg_speed": 58.6, "avg_wait_sec": 15}
+    ]
     
-    if client:
-        db = client[DB_NAME]
-        col = db[COLLECTION_NAME]
+    if slot != 'all':
+        selected = next((i for i in intervals if i["slot"] == slot), intervals[0])
+        return jsonify({"single": selected})
         
-        readings = list(col.find({"road_name": road_name}).limit(100))
-        if not readings:
-            return jsonify({"error": "Location not found"}), 404
-            
-        coords = readings[0]["location"]["coordinates"]
-        avg_speed = sum(r["avg_speed"] for r in readings) / len(readings)
-        avg_wait = sum(r.get("signal_wait_time_sec", 60) for r in readings) / len(readings)
-        avg_noise = sum(r.get("noise_level_db", 70) for r in readings) / len(readings)
-        
-        v_tw = sum(r.get("vehicle_breakdown", {}).get("two_wheelers", 0) for r in readings)
-        v_cars = sum(r.get("vehicle_breakdown", {}).get("cars", 0) for r in readings)
-        v_auto = sum(r.get("vehicle_breakdown", {}).get("auto_rickshaws", 0) for r in readings)
-        v_buses = sum(r.get("vehicle_breakdown", {}).get("buses", 0) for r in readings)
-        v_trucks = sum(r.get("vehicle_breakdown", {}).get("trucks", 0) for r in readings)
-        
-        c_office = sum(r.get("commuter_demographics", {}).get("office_workers", 0) for r in readings)
-        c_students = sum(r.get("commuter_demographics", {}).get("students", 0) for r in readings)
-        c_daily = sum(r.get("commuter_demographics", {}).get("daily_commuters", 0) for r in readings)
-        c_comm = sum(r.get("commuter_demographics", {}).get("commercial_drivers", 0) for r in readings)
-        
-        latest_readings = [{
-            "sensor_id": r["sensor_id"],
-            "status": r["status"],
-            "vehicle_count": r["vehicle_count"],
-            "avg_speed": r["avg_speed"],
-            "signal_wait_time_sec": r.get("signal_wait_time_sec", 60),
-            "noise_level_db": r.get("noise_level_db", 70)
-        } for r in readings[:8]]
-        
-    else:
-        with open(DATA_FILE, 'r', encoding='utf-8') as f:
-            raw_data = json.load(f)
-        readings = [d for d in raw_data if d["road_name"] == road_name]
-        coords = readings[0]["location"]["coordinates"] if readings else [77.6229, 12.9172]
-        avg_speed = sum(r["avg_speed"] for r in readings) / len(readings) if readings else 52.5
-        avg_wait = sum(r.get("signal_wait_time_sec", 60) for r in readings) / len(readings) if readings else 90.0
-        avg_noise = sum(r.get("noise_level_db", 70) for r in readings) / len(readings) if readings else 75.0
-        
-        v_tw = sum(r.get("vehicle_breakdown", {}).get("two_wheelers", 0) for r in readings)
-        v_cars = sum(r.get("vehicle_breakdown", {}).get("cars", 0) for r in readings)
-        v_auto = sum(r.get("vehicle_breakdown", {}).get("auto_rickshaws", 0) for r in readings)
-        v_buses = sum(r.get("vehicle_breakdown", {}).get("buses", 0) for r in readings)
-        v_trucks = sum(r.get("vehicle_breakdown", {}).get("trucks", 0) for r in readings)
-        
-        c_office = sum(r.get("commuter_demographics", {}).get("office_workers", 0) for r in readings)
-        c_students = sum(r.get("commuter_demographics", {}).get("students", 0) for r in readings)
-        c_daily = sum(r.get("commuter_demographics", {}).get("daily_commuters", 0) for r in readings)
-        c_comm = sum(r.get("commuter_demographics", {}).get("commercial_drivers", 0) for r in readings)
-        
-        latest_readings = [{
-            "sensor_id": r["sensor_id"],
-            "status": r["status"],
-            "vehicle_count": r["vehicle_count"],
-            "avg_speed": r["avg_speed"],
-            "signal_wait_time_sec": r.get("signal_wait_time_sec", 60),
-            "noise_level_db": r.get("noise_level_db", 70)
-        } for r in readings[:8]]
-        
-    return jsonify({
-        "road_name": road_name,
-        "coords": coords,
-        "readings_count": len(readings),
-        "avg_speed": avg_speed,
-        "avg_wait": avg_wait,
-        "avg_noise": avg_noise,
-        "vehicle_mix": {
-            "two_wheelers": v_tw, "cars": v_cars, "auto_rickshaws": v_auto, "buses": v_buses, "trucks": v_trucks
-        },
-        "commuters": {
-            "office_workers": c_office, "students": c_students, "daily_commuters": c_daily, "commercial_drivers": c_comm
-        },
-        "latest_readings": latest_readings
-    })
+    return jsonify(intervals)
 
 @app.route('/api/map_points')
 def api_map_points():
@@ -509,6 +460,15 @@ def api_map_points():
             weight = float(d["vehicle_count"]) / max(1.0, float(d["avg_speed"]))
             points.append({"lat": coords[1], "lon": coords[0], "weight": min(1.0, weight / 5.0)})
     return jsonify(points)
+
+@app.route('/api/analytics')
+def api_analytics():
+    from queries_and_analytics import run_all_queries
+    res = run_all_queries()
+    return jsonify({
+        "q2_peak_hours": res["q2_peak_hours"],
+        "q3_lowest_speed": res["q3_lowest_speed"]
+    })
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
