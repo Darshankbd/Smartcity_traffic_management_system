@@ -4,8 +4,9 @@ A complete Big Data Analytics (BDA) application built using **MongoDB**, **Pytho
 
 ---
 
-## 🌐 Localhost Access Links
-- 🚀 **Web Dashboard URL:** **[http://localhost:5000](http://localhost:5000)** (or `http://127.0.0.1:5000`)
+## 🌐 Live Web App & Cloud Links
+- 🚀 **Render Live Cloud Demo:** **[https://smartcity-traffic.onrender.com](https://smartcity-traffic.onrender.com)**
+- 💻 **Localhost Dashboard URL:** **[http://localhost:5000](http://localhost:5000)** (or `http://127.0.0.1:5000`)
 - 🍃 **MongoDB Service URI:** **`mongodb://localhost:27017`**
 - 📄 **Project Report Download:** **`http://localhost:5000/download_report`**
 
@@ -16,7 +17,7 @@ A complete Big Data Analytics (BDA) application built using **MongoDB**, **Pytho
 - **Dataset:** 22,000+ IoT Sensor Documents (GeoJSON coordinates, vehicle category breakdown, commuter demographics, signal standing wait time, noise pollution dB, timestamps)
 - **Analytics:** 7 Geospatial and Time-Series Aggregation Pipelines
 - **Visualizations:** Interactive Folium Heatmaps (`.html`) & Matplotlib Charts (`.png`)
-- **Web Dashboard:** Interactive Flask Application (`http://localhost:5000`)
+- **Web Dashboard:** Interactive Flask Application (`http://localhost:5000` & Render Cloud)
 - **Location Inspector:** Select from 15 major city intersections to view place-specific traffic statistics
 - **Project Report:** Automated PDF Report Generation (`Smart_City_Traffic_Monitoring_Project_Report.pdf`)
 
@@ -31,6 +32,10 @@ Smartcity_traffic_management_system/
 ├── generate_visualizations.py  # Builds Folium heatmap HTML and Matplotlib charts
 ├── generate_report.py          # Compiles publication-ready PDF project report
 ├── app.py                      # Interactive Web Dashboard (Flask) running at http://localhost:5000
+├── run_all.py                  # 1-Click Automated Master Pipeline Runner
+├── run_all.bat                 # 1-Click Windows Batch Runner
+├── Procfile                    # Render Cloud Hosting Configuration
+├── Dockerfile                  # Containerized deployment config
 ├── requirements.txt            # Dependencies
 └── visualizations/             # Generated charts & map assets
 ```
@@ -39,54 +44,55 @@ Smartcity_traffic_management_system/
 
 ## ⚡ Quick Execution Guide
 
-### 1. Install Dependencies
+### 1. Automate Everything (1-Click Run)
+```bash
+python run_all.py
+```
+*(Or double-click `run_all.bat` on Windows)*
+
+---
+
+### 2. Manual Step-by-Step Execution Guide
+
+#### Step 1: Install Dependencies
 ```bash
 pip install -r requirements.txt
 ```
 
-### 2. Generate IoT Dataset (22,000+ Records)
+#### Step 2: Generate IoT Dataset (22,000+ Records)
 ```bash
 python generate_data.py
 ```
 
-### 3. Ingest into MongoDB & Build `2dsphere` Index
+#### Step 3: Ingest into MongoDB & Build `2dsphere` Index
 Ensure MongoDB is running locally at `mongodb://localhost:27017`:
 ```bash
 python db_setup_and_ingest.py
 ```
 
-### 4. Execute MongoDB Queries & Aggregations
+#### Step 4: Execute MongoDB Queries & Aggregations
 ```bash
 python queries_and_analytics.py
 ```
 
-### 5. Generate Maps, Visual Charts & PDF Report
+#### Step 5: Generate Maps, Visual Charts & PDF Report
 ```bash
 python generate_visualizations.py
 python generate_report.py
 ```
 
-### 6. Launch Interactive Web Dashboard
+#### Step 6: Launch Interactive Web Dashboard
 ```bash
 python app.py
 ```
-Open your browser at **[http://localhost:5000](http://localhost:5000)** to interact with the live map, place selector widget, radius search form, and query engine!
+Open your browser at **[http://localhost:5000](http://localhost:5000)** or access the live cloud version at **[https://smartcity-traffic.onrender.com](https://smartcity-traffic.onrender.com)**!
 
 ---
 
-## 🔍 Key MongoDB Queries Included
+## 🌐 Deploying to Render (Free Cloud Hosting)
 
-1. **Geospatial Proximity Search (`$near` with `2dsphere`)**:
-   Finds sensors within 2.5 km of Silk Board Junction (`[77.6229, 12.9172]`).
-2. **Peak Congestion Hours Aggregation (`$hour`)**:
-   Groups vehicle counts by hour of the day to identify morning (8–11 AM) and evening (5–9 PM) traffic rush hours.
-3. **Roads with Lowest Average Speed**:
-   Identifies the top 10 bottleneck intersections across the city.
-4. **Daily Vehicle Count Trend (`$dateToString`)**:
-   Evaluates 30-day citywide vehicle volume trends.
-5. **Severe Congestion Hotspot Classifier (`$match`)**:
-   Filters for readings with speed < 15 km/h AND vehicle count > 110.
-6. **Vehicle Category Breakdown (`$group`)**:
-   Aggregates counts for 2-Wheelers, Cars, Auto Rickshaws, Buses, and Trucks.
-7. **Commuter Impact & Signal Delay (`$group`)**:
-   Analyzes standing signal wait times (sec) and affected commuter groups (Office Workers vs. Students).
+1. Go to **[render.com](https://render.com)** and sign in with GitHub.
+2. Click **New +** → **Web Service** → Select repository `Smartcity_traffic_management_system`.
+3. Set **Build Command**: `pip install -r requirements.txt && python generate_data.py && python generate_visualizations.py && python generate_report.py`
+4. Set **Start Command**: `gunicorn app:app`
+5. Click **Create Web Service**!
