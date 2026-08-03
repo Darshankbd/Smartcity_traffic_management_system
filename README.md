@@ -5,7 +5,7 @@ A complete Big Data Analytics (BDA) application built using **MongoDB**, **Pytho
 ---
 
 ## 🌐 Live Web App & Cloud Links
-- 🚀 **Render Live Cloud Demo:** **[https://smartcity-traffic.onrender.com](https://smartcity-traffic.onrender.com)**
+- 🚀 **Render Live Cloud Demo:** **[https://smartcity-traffic-management-system.onrender.com](https://smartcity-traffic-management-system.onrender.com)**
 - 💻 **Localhost Dashboard URL:** **[http://localhost:5000](http://localhost:5000)** (or `http://127.0.0.1:5000`)
 - 🍃 **MongoDB Service URI:** **`mongodb://localhost:27017`**
 - 📄 **Project Report Download:** **`http://localhost:5000/download_report`**
@@ -85,7 +85,7 @@ python generate_report.py
 ```bash
 python app.py
 ```
-Open your browser at **[http://localhost:5000](http://localhost:5000)** or access the live cloud version at **[https://smartcity-traffic.onrender.com](https://smartcity-traffic.onrender.com)**!
+Open your browser at **[http://localhost:5000](http://localhost:5000)** or access the live cloud version at **[https://smartcity-traffic-management-system.onrender.com](https://smartcity-traffic-management-system.onrender.com)**!
 
 ---
 
